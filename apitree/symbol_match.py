@@ -2,14 +2,16 @@ from __future__ import annotations
 
 import dataclasses
 import functools
+import os
 import pathlib
 import types
 from collections.abc import Callable
 from typing import Any
 
-from etils import edc, epy
+import typing_extensions
+from etils import edc, epath, epy
 
-from apitree import ast_utils
+from apitree import ast_utils, tree_extractor
 
 
 @edc.dataclass
@@ -26,8 +28,10 @@ class Symbol:
   value: Any
 
   parent: types.ModuleType
-  parent_symb: Symbol
+  parent_symb: tree_extractor.Node
   ctx: Context = dataclasses.field(repr=False)
+
+  node: tree_extractor.Node = dataclasses.field(repr=False, init=False)
 
   @functools.cached_property
   def is_imported(self) -> bool:
@@ -54,6 +58,12 @@ class Symbol:
   def match(self) -> type[Match]:
     return Match.root_match(self)
 
+  @functools.cached_property
+  def qualname(self) -> bool:
+    if self.parent_symb is None:
+      return self.name
+    return f'{self.parent_symb.symbol.qualname}.{self.name}'
+
   # Return type
 
 
@@ -62,8 +72,14 @@ class Match:
 
   recurse: bool = False
   documented = True
+  template_name: str | None = None
+  docstring_1line: str = ''
+  icon: str = ''
+
+  toctree = None
 
   SUBCLASSES: list[Match] = []
+  SKIP_REGISTRATION = False
 
   def __init__(self, symbol):
     self.symbol = symbol
@@ -77,10 +93,14 @@ class Match:
   @classmethod
   def root_match(cls, symbol: Symbol) -> Match:
     for subcls in cls.SUBCLASSES:
+      if subcls.__dict__.get('SKIP_REGISTRATION', False):
+        continue
       all_match = []
       self = subcls(symbol)
       for subcls_parents in subcls.mro():
         if subcls_parents is object:
+          continue
+        if subcls_parents.__dict__.get('SKIP_REGISTRATION', False):
           continue
         try:
           all_match.append(subcls_parents.match(self))
@@ -105,6 +125,25 @@ class Match:
   def filename(self) -> pathlib.Path:
     raise ValueError(f'Missing filename for {type(self)}')
 
+  @functools.cached_property
+  def template(self) -> str:
+    if not self.template_name:
+      return ''
+    return load_template(self.template_name)
+
+  @property
+  def content(self):
+    # TODO(epot)
+    # * Title
+    # * Docstring
+    # * Signature
+    # * Arguments
+    # * Source code
+    return self.template.format(
+        qualname=self.symbol.qualname,
+        toctree=self.toctree,
+    )
+
 
 def _not(cls: type[Match]) -> Callable[[Match], bool]:
   def match(self):
@@ -113,7 +152,26 @@ def _not(cls: type[Match]) -> Callable[[Match], bool]:
   return match
 
 
-class _IsModule(Match):
+@functools.cache
+def load_template(template_name):
+  path = epath.resource_path('apitree') / f'templates/{template_name}.md'
+  return path.read_text()
+
+
+class _WithDocstring(Match):
+  SKIP_REGISTRATION = True
+
+  @property
+  def docstring_1line(self) -> str:
+    if not hasattr(self.symbol.value, '__doc__'):
+      return ''
+    else:
+      return self.symbol.value.__doc__.split('\n', 1)[0]
+
+
+class _IsModule(_WithDocstring, Match):
+  icon = 'm'
+  template_name = 'module'
 
   def match(self) -> bool:
     return isinstance(self.symbol.value, types.ModuleType)
@@ -123,8 +181,18 @@ class _IsModule(Match):
     return (
         self.symbol.parent_symb.match.filename.parent
         / self.symbol.name
-        / 'index.rst'
+        / 'index.md'
     )
+
+  @property
+  def toctree(self) -> str:
+    items = []
+    for n in self.symbol.node.documented_childs:
+      path = n.match.filename.relative_to(self.filename.parent)
+      path = os.fspath(path)
+      path = path.removesuffix('.md')
+      items.append(path)
+    return '\n'.join(items)
 
 
 class _RootModule(_IsModule):
@@ -135,7 +203,8 @@ class _RootModule(_IsModule):
 
   @property
   def filename(self) -> pathlib.Path:
-    return pathlib.Path(self.symbol.name) / 'index.rst'
+    # TODO(epot): support alias
+    return pathlib.Path(self.symbol.name) / 'index.md'
 
 
 class _ImplicitlyImportedModule(_IsModule):
@@ -189,8 +258,7 @@ class _IsValue(Match):
   @property
   def filename(self) -> pathlib.Path:
     return (
-        self.symbol.parent_symb.match.filename.parent
-        / f'{self.symbol.name}.rst'
+        self.symbol.parent_symb.match.filename.parent / f'{self.symbol.name}.md'
     )
 
 
@@ -227,19 +295,60 @@ class _FutureAnnotation(_IsValue):
     return isinstance(self.symbol.value, __future__._Feature)
 
 
-class _ImportedValue(_IsValue):
+# class _ImportedValue(_IsValue):
+
+#   @property
+#   def documented(self):
+#     # Only document imported values when the parent is a package
+#     return _is_package(self.symbol.parent)
+
+#   def match(self):
+#     return self.symbol.is_imported
+
+
+class _DocumentedValue(_IsValue):
 
   @property
   def documented(self):
     # Only document imported values when the parent is a package
-    return _is_package(self.symbol.parent)
+    return not self.symbol.is_imported or _is_package(self.symbol.parent)
+
+
+# TODO(epot): How to duplicate this with _ImportedValue ?
+
+
+class _TypeAliasValue(_DocumentedValue):
+  icon = 't'
+  template_name = 'type_alias'
 
   def match(self):
-    return self.symbol.is_imported
+    # TODO(epot): How to detect `Any`,...
+    return typing_extensions.get_origin(self.symbol.value) is not None
 
 
-class _DocumentedValue(_IsValue):
-  pass
+class _ClassValue(_WithDocstring, _DocumentedValue):
+  icon = 'c'
+  template_name = 'class'
+
+  def match(self):
+    return isinstance(self.symbol.value, type)
+
+
+class _FunctionValue(_WithDocstring, _DocumentedValue):
+  icon = 'f'
+  template_name = 'function'
+
+  def match(self):
+    return isinstance(
+        self.symbol.value, (types.FunctionType, functools.partial)
+    )
+
+
+class _AttributeValue(_DocumentedValue):
+  icon = 'a'
+  template_name = 'attribute'
+
+  # TODO(epot): Extract doc from parent
 
 
 def _is_package(module: types.ModuleType) -> bool:

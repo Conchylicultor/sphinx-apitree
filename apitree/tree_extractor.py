@@ -3,6 +3,7 @@ from __future__ import annotations
 import dataclasses
 import functools
 import types
+from typing import Iterator
 
 from etils import edc, epy
 
@@ -12,6 +13,9 @@ from apitree import symbol_match
 @dataclasses.dataclass
 class Node:
   symbol: symbol_match.Symbol
+
+  def __post_init__(self):
+    self.symbol.node = self
 
   @property
   def match(self):
@@ -34,6 +38,15 @@ class Node:
       all_childs.append(Node(symbol))
 
     return all_childs
+
+  @functools.cached_property
+  def documented_childs(self) -> list[Node]:
+    return [n for n in self.childs if n.match.documented]
+
+  def iter_documented_nodes(self) -> Iterator[Node]:
+    yield self
+    for c in self.documented_childs:
+      yield from c.iter_documented_nodes()
 
   def __repr__(self) -> str:
     if self.childs:
