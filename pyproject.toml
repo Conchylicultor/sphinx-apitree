@@ -37,6 +37,12 @@ dev = [
     "pylint>=2.6.0",
     "pyink",
 ]
+# Extensions used by `apitree.make_project`
+ext = [
+    "sphinx",
+    "myst_nb",
+    "sphinx_book_theme",
+]
 
 [tool.pyink]
 # Formatting configuration to follow Google style-guide

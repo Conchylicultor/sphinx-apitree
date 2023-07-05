@@ -1,3 +1,3 @@
-# API
+# All symbols
 
 {symbols}

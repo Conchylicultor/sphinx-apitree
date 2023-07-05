@@ -6,16 +6,17 @@ from etils import epath, epy
 from apitree import md_utils, symbol_match, tree_extractor
 
 
-def write_doc(node: tree_extractor.Node | types.ModuleType) -> None:
+def write_doc(
+    node: tree_extractor.Node | types.ModuleType, *, verbose=True
+) -> None:
   if not isinstance(node, tree_extractor.Node):
     node = tree_extractor.get_api_tree(node)
 
+  if verbose:
+    print(node)
+
   root_dir = epath.resource_path(node.symbol.value)
   root_dir = root_dir.parent / 'docs/api'
-
-  # import apitree
-  # root_dir = epath.Path(apitree.__file__).parent.parent
-  # root_dir = root_dir / '_build'
 
   if root_dir.exists():
     root_dir.rmtree()
