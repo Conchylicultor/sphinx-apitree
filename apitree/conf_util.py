@@ -2,6 +2,12 @@ import importlib
 from typing import Any
 
 from apitree import writer
+from apitree.ext import docstring
+
+
+def setup(app):
+  # Fix bad ```python md formatting
+  app.connect('autodoc-process-docstring', docstring.preprocess_docstring)
 
 
 def make_project(
@@ -54,4 +60,6 @@ def make_project(
           'member-order': 'bysource',
           'undoc-members': True,
       },
+      # Register hooks
+      setup=setup,
   )

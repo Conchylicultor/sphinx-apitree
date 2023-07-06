@@ -163,7 +163,7 @@ class _WithDocstring(Match):
 
   @property
   def docstring_1line(self) -> str:
-    if not hasattr(self.symbol.value, '__doc__'):
+    if not getattr(self.symbol.value, '__doc__', None):
       return ''
     else:
       return self.symbol.value.__doc__.split('\n', 1)[0]
