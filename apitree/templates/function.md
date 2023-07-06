@@ -2,5 +2,5 @@
 
 
 ```{{eval-rst}}
-.. autofunction:: {qualname}
+.. autofunction:: {qualname_no_alias}
 ```

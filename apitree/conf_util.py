@@ -1,5 +1,8 @@
 import importlib
+import pathlib
 from typing import Any
+
+import tomllib
 
 from apitree import writer
 from apitree.ext import docstring
@@ -7,16 +10,19 @@ from apitree.ext import docstring
 
 def setup(app):
   # Fix bad ```python md formatting
-  app.connect('autodoc-process-docstring', docstring.preprocess_docstring)
+  docstring.setup(app)
 
 
 def make_project(
-    project_name: str,
+    modules: dict[str, str],
     globals: dict[str, Any],
 ):
-  module = importlib.import_module(project_name)
+  project_name = _get_project_name()
 
-  writer.write_doc(module)
+  for alias, module_name in modules.items():
+    module = importlib.import_module(module_name)
+
+    writer.write_doc(module, alias=alias)
 
   globals.update(
       # Project information
@@ -51,9 +57,12 @@ def make_project(
       # TODO(epot): Instead should have a self-reference TOC
       html_theme_options={'home_page_in_toc': True},
       # -- Extensions ---------------------------------------------------
+      # ---- myst -------------------------------------------------
+      myst_heading_anchors=3,
       # ---- myst_nb -------------------------------------------------
       nb_execution_mode='off',
       # ---- autodoc -------------------------------------------------
+      autodoc_typehints_format='fully-qualified',  # `x.y.MyClass`
       autodoc_default_options={
           'members': True,
           'show-inheritance': True,
@@ -63,3 +72,10 @@ def make_project(
       # Register hooks
       setup=setup,
   )
+
+
+def _get_project_name():
+  # TODO(epot): This hardcode too much assumption on the program
+  path = pathlib.Path(__file__).parent.parent / 'pyproject.toml'
+  info = tomllib.loads(path.read_text())
+  return info['project']['name']

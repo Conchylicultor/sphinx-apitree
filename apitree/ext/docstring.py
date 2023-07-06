@@ -1,4 +1,7 @@
-def preprocess_docstring(app, what, name, obj, options, lines):
+"""Fix bad ```python md formatting."""
+
+
+def _preprocess_docstring(app, what, name, obj, options, lines):
   # Modify each line of the docstring
   is_block = False
   new_lines = []
@@ -20,3 +23,8 @@ def preprocess_docstring(app, what, name, obj, options, lines):
         line = f'  {line}'
       new_lines.append(line)
   lines[:] = new_lines
+
+
+def setup(app):
+  # Fix bad ```python md formatting
+  app.connect('autodoc-process-docstring', _preprocess_docstring)

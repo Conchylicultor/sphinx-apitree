@@ -18,6 +18,7 @@ from apitree import ast_utils, tree_extractor
 @dataclasses.dataclass
 class Context:
   module_name: str
+  alias: str
   # visited: dict[str, _RefNode] = dataclasses.field(default_factory=dict)
 
 
@@ -60,9 +61,18 @@ class Symbol:
 
   @functools.cached_property
   def qualname(self) -> bool:
-    if self.parent_symb is None:
-      return self.name
+    """Exemple: `dca.typing.Float`."""
+    if self.parent_symb is None:  # root node
+      assert self.ctx.module_name == self.name
+      return self.ctx.alias
     return f'{self.parent_symb.symbol.qualname}.{self.name}'
+
+  @functools.cached_property
+  def qualname_no_alias(self) -> bool:
+    """Exemple: `dataclass_array.typing.Float`."""
+    if self.parent_symb is None:  # root node
+      return self.name
+    return f'{self.parent_symb.symbol.qualname_no_alias}.{self.name}'
 
   # Return type
 
@@ -76,7 +86,7 @@ class Match:
   docstring_1line: str = ''
   icon: str = ''
 
-  toctree = None
+  extra_template_kwargs = {}
 
   SUBCLASSES: list[Match] = []
   SKIP_REGISTRATION = False
@@ -141,7 +151,8 @@ class Match:
     # * Source code
     return self.template.format(
         qualname=self.symbol.qualname,
-        toctree=self.toctree,
+        qualname_no_alias=self.symbol.qualname_no_alias,
+        **self.extra_template_kwargs,
     )
 
 
@@ -173,6 +184,8 @@ class _IsModule(_WithDocstring, Match):
   icon = 'm'
   template_name = 'module'
 
+  import_statement = ''
+
   def match(self) -> bool:
     return isinstance(self.symbol.value, types.ModuleType)
 
@@ -182,6 +195,13 @@ class _IsModule(_WithDocstring, Match):
         self.symbol.parent_symb.match.filename.parent
         / self.symbol.name
         / 'index.md'
+    )
+
+  @property
+  def extra_template_kwargs(self):
+    return dict(
+        toctree=self.toctree,
+        import_statement=self.import_statement,
     )
 
   @property
@@ -203,8 +223,34 @@ class _RootModule(_IsModule):
 
   @property
   def filename(self) -> pathlib.Path:
-    # TODO(epot): support alias
-    return pathlib.Path(self.symbol.name) / 'index.md'
+    # return pathlib.Path(self.symbol.name) / 'index.md'
+    return pathlib.Path(self.symbol.ctx.alias) / 'index.md'
+
+  @property
+  def import_statement(self) -> str:
+    module_name = self.symbol.ctx.module_name
+    alias = self.symbol.ctx.alias
+
+    if '.' in module_name:
+      left, last_name = module_name.rsplit('.')
+      left = f'from {left} '
+    else:
+      left = ''
+      last_name = module_name
+
+    if last_name == alias:
+      stmt = f'import {last_name}'
+    else:
+      stmt = f'import {last_name} as {alias}'
+
+    stmt = left + stmt
+    return epy.dedent(
+        f"""
+        ```{{code-block}}
+        {stmt}
+        ```
+        """
+    )
 
 
 class _ImplicitlyImportedModule(_IsModule):

@@ -7,10 +7,13 @@ from apitree import md_utils, symbol_match, tree_extractor
 
 
 def write_doc(
-    node: tree_extractor.Node | types.ModuleType, *, verbose=True
+    node: tree_extractor.Node | types.ModuleType,
+    *,
+    verbose=True,
+    alias: str = None,
 ) -> None:
   if not isinstance(node, tree_extractor.Node):
-    node = tree_extractor.get_api_tree(node)
+    node = tree_extractor.get_api_tree(node, alias=alias)
 
   if verbose:
     print(node)

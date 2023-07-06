@@ -56,9 +56,10 @@ class Node:
     return f'{self.symbol.name}={type(self.match).__name__}{child_str}'
 
 
-def get_api_tree(module: types.ModuleType):
+def get_api_tree(module: types.ModuleType, alias: str = ''):
   ctx = symbol_match.Context(
       module_name=module.__name__,
+      alias=alias or module.__name__,
   )
   return Node(
       symbol_match.Symbol(
