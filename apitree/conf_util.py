@@ -3,6 +3,7 @@ import pathlib
 from typing import Any
 
 import tomllib
+from etils import epath
 
 from apitree import writer
 from apitree.ext import docstring
@@ -17,12 +18,18 @@ def make_project(
     modules: dict[str, str],
     globals: dict[str, Any],
 ):
-  project_name = _get_project_name()
+  root_dir = epath.Path(globals['__file__']).parent  # <repo>/docs/
+  project_name = _get_project_name(root_dir=root_dir.parent)
+
+  api_dir = root_dir / 'api'
+  if api_dir.exists():
+    api_dir.rmtree()
+  api_dir.mkdir()
 
   for alias, module_name in modules.items():
     module = importlib.import_module(module_name)
 
-    writer.write_doc(module, alias=alias)
+    writer.write_doc(module, alias=alias, root_dir=api_dir)
 
   globals.update(
       # Project information
@@ -74,8 +81,8 @@ def make_project(
   )
 
 
-def _get_project_name():
+def _get_project_name(root_dir):
   # TODO(epot): This hardcode too much assumption on the program
-  path = pathlib.Path(__file__).parent.parent / 'pyproject.toml'
+  path = root_dir / 'pyproject.toml'
   info = tomllib.loads(path.read_text())
   return info['project']['name']

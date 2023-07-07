@@ -11,7 +11,7 @@ from typing import Any
 import typing_extensions
 from etils import edc, epath, epy
 
-from apitree import ast_utils, tree_extractor
+from apitree import ast_utils, md_utils, tree_extractor
 
 
 @edc.dataclass
@@ -184,8 +184,6 @@ class _IsModule(_WithDocstring, Match):
   icon = 'm'
   template_name = 'module'
 
-  import_statement = ''
-
   def match(self) -> bool:
     return isinstance(self.symbol.value, types.ModuleType)
 
@@ -201,7 +199,6 @@ class _IsModule(_WithDocstring, Match):
   def extra_template_kwargs(self):
     return dict(
         toctree=self.toctree,
-        import_statement=self.import_statement,
     )
 
   @property
@@ -217,6 +214,7 @@ class _IsModule(_WithDocstring, Match):
 
 class _RootModule(_IsModule):
   recurse = True
+  template_name = 'api'
 
   def match(self) -> bool:
     return self.symbol.parent is None
@@ -225,6 +223,14 @@ class _RootModule(_IsModule):
   def filename(self) -> pathlib.Path:
     # return pathlib.Path(self.symbol.name) / 'index.md'
     return pathlib.Path(self.symbol.ctx.alias) / 'index.md'
+
+  @property
+  def extra_template_kwargs(self):
+    return dict(
+        **super().extra_template_kwargs,
+        import_statement=self.import_statement,
+        symbols_table=self.symbols_table,
+    )
 
   @property
   def import_statement(self) -> str:
@@ -251,6 +257,23 @@ class _RootModule(_IsModule):
         ```
         """
     )
+
+  @property
+  def symbols_table(self):
+    table = md_utils.Table(header=['', '', ''])
+
+    for n in self.symbol.node.iter_documented_nodes():
+      filename = n.match.filename
+      filename = filename.relative_to(self.filename.parent)
+      filename = os.fspath(filename)
+      filename = filename.removesuffix('.md')
+      table.add_row(
+          f'*{n.match.icon}*',
+          f'[{n.symbol.qualname}]({filename})',
+          f'{n.match.docstring_1line}',
+      )
+
+    return table.make()
 
 
 class _ImplicitlyImportedModule(_IsModule):

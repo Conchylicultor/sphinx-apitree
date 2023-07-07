@@ -3,7 +3,7 @@ import types
 
 from etils import epath, epy
 
-from apitree import md_utils, symbol_match, tree_extractor
+from apitree import symbol_match, tree_extractor
 
 
 def write_doc(
@@ -11,42 +11,18 @@ def write_doc(
     *,
     verbose=True,
     alias: str = None,
+    root_dir: epath.Path = None,
 ) -> None:
   if not isinstance(node, tree_extractor.Node):
     node = tree_extractor.get_api_tree(node, alias=alias)
+  if not root_dir:
+    root_dir = epath.resource_path(node.symbol.value)
+    root_dir = root_dir.parent / 'docs/api'
 
   if verbose:
     print(node)
 
-  root_dir = epath.resource_path(node.symbol.value)
-  root_dir = root_dir.parent / 'docs/api'
-
-  if root_dir.exists():
-    root_dir.rmtree()
-  root_dir.mkdir(exist_ok=True)
-
-  _write_all_symbols(root_dir, node)
-
   _write_node(root_dir, node)
-
-
-def _write_all_symbols(root_dir: epath.Path, node: tree_extractor.Node) -> None:
-  table = md_utils.Table(header=['', '', ''])
-
-  for n in node.iter_documented_nodes():
-    filename = n.match.filename
-    filename = os.fspath(filename)
-    filename = filename.removesuffix('.md')
-    table.add_row(
-        f'*{n.match.icon}*',
-        f'[{n.symbol.qualname}]({filename})',
-        f'{n.match.docstring_1line}',
-    )
-
-  content = symbol_match.load_template('api').format(symbols=table.make())
-
-  f = root_dir / '_api.md'
-  f.write_text(content)
 
 
 def _write_node(root_dir: epath.Path, node: tree_extractor.Node) -> None:

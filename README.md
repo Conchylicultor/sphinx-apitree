@@ -23,17 +23,13 @@ Then to generate the doc:
 sphinx-build -b html docs/ docs/_build
 ```
 
-To add the API to your toctree:
-
-* `api/my_module`: Tree of symbols of your API
-* `api/_api`: Single page containing all symbols of the API.
+To add `api/my_module/index` somewhere in your toctree, like:
 
 ```md
 ..toctree:
   :caption: API
 
-  api/_api
-  api/my_module
+  api/my_module/index
 ```
 
 ## Features
