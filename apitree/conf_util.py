@@ -5,7 +5,7 @@ from typing import Any
 import tomllib
 from etils import epath
 
-from apitree import writer
+from apitree import structs, writer
 from apitree.ext import docstring
 
 
@@ -15,7 +15,7 @@ def setup(app):
 
 
 def make_project(
-    modules: dict[str, str],
+    modules: dict[str, str] | structs.ModuleInfo,
     globals: dict[str, Any],
 ):
   root_dir = epath.Path(globals['__file__']).parent  # <repo>/docs/
@@ -26,10 +26,15 @@ def make_project(
     api_dir.rmtree()
   api_dir.mkdir()
 
-  for alias, module_name in modules.items():
-    module = importlib.import_module(module_name)
+  if isinstance(modules, dict):
+    modules = [
+      structs.ModuleInfo(alias=k, module_name=v) for k, v in modules.items()
+    ]
+  if isinstance(modules, structs.ModuleInfo):
+    modules = [modules]
 
-    writer.write_doc(module, alias=alias, root_dir=api_dir)
+  for module_info in modules:
+    writer.write_doc(module_info, root_dir=api_dir)
 
   globals.update(
       # Project information

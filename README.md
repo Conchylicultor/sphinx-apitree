@@ -16,7 +16,8 @@ In `docs/conf.py`, replace everything by:
 import apitree
 
 apitree.make_project(
-    project_name='my_module',
+    # e.g. `import visu3d as v3d` -> {'v3d': 'visu3d'}
+    project_name={'alias': 'my_module'},
     globals=globals(),
 )
 ```
@@ -40,7 +41,7 @@ To add `api/my_module/index` somewhere in your toctree, like:
 
 * Theme
 * Auto-generate the API tree, with better features
-  * Do not require `__all__`
+  * Do not require `__all__` (smart detect of which symbols are documented)
   * Add expandable toc tree with all symbols
 * ...
 
@@ -53,7 +54,7 @@ To add `api/my_module/index` somewhere in your toctree, like:
     # Installed through `pip install .[docs]`
     docs = [
         # Install `apitree` with all extensions (sphinx, theme,...)
-        "sphinx-apitree[ext] @ https://github.com/conchylicultor/sphinx-apitree",
+        "sphinx-apitree[ext]",
     ]
     ```
 
@@ -73,6 +74,7 @@ To add `api/my_module/index` somewhere in your toctree, like:
 
 ## Examples of projects using apitree
 
-* https://github.com/google-research/visu3d
-* https://github.com/google-research/dataclass_array
-* https://github.com/google-research/etils
+* https://github.com/google-research/visu3d (https://visu3d.readthedocs.io/)
+* https://github.com/google-research/dataclass_array (https://dataclass-array.readthedocs.io/)
+* https://github.com/google-research/etils (https://etils.readthedocs.io/)
+* https://github.com/google-research/kauldron (https://kauldron.readthedocs.io/)

@@ -9,7 +9,7 @@
 
 ## All symbols
 
-{symbols_table}
+{all_symbols_table}
 
 
 ```{{toctree}}

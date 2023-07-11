@@ -5,6 +5,12 @@
   :no-members:
 ```
 
+## Symbols
+
+{symbols_table}
+
 ```{{toctree}}
+:hidden:
+
 {toctree}
 ```

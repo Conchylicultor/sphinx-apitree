@@ -5,7 +5,7 @@ import functools
 import os
 import pathlib
 import types
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from typing import Any
 
 import typing_extensions
@@ -46,12 +46,6 @@ class Symbol:
     return set(imp.alias for imp in ast_utils.parse_global_imports(self.parent))
 
   @functools.cached_property
-  def is_package(self) -> bool:
-    # TODO(epot): Could also add custom attribute `__docutil__.is_package` so
-    # standard module behave like package.
-    return _is_package(self.value)
-
-  @functools.cached_property
   def belong_to_namespace(self) -> bool:
     return self.value.__name__.startswith(self.ctx.module_name)
 
@@ -63,7 +57,7 @@ class Symbol:
   def qualname(self) -> bool:
     """Exemple: `dca.typing.Float`."""
     if self.parent_symb is None:  # root node
-      assert self.ctx.module_name == self.name
+      # assert self.ctx.module_name == self.name
       return self.ctx.alias
     return f'{self.parent_symb.symbol.qualname}.{self.name}'
 
@@ -155,6 +149,22 @@ class Match:
         **self.extra_template_kwargs,
     )
 
+  def make_symbols_table(self, nodes: Iterator[tree_extractor.Node]):
+    table = md_utils.Table(header=['', '', ''])
+
+    for n in nodes:
+      filename = n.match.filename
+      filename = filename.relative_to(self.filename.parent)
+      filename = os.fspath(filename)
+      filename = filename.removesuffix('.md')
+      table.add_row(
+          f'*{n.match.icon}*',
+          f'[{n.symbol.qualname}]({filename})',
+          f'{n.match.docstring_1line}',
+      )
+
+    return table.make()
+
 
 def _not(cls: type[Match]) -> Callable[[Match], bool]:
   def match(self):
@@ -199,6 +209,9 @@ class _IsModule(_WithDocstring, Match):
   def extra_template_kwargs(self):
     return dict(
         toctree=self.toctree,
+        symbols_table=self.make_symbols_table(
+            self.symbol.node.documented_childs
+        ),
     )
 
   @property
@@ -229,7 +242,9 @@ class _RootModule(_IsModule):
     return dict(
         **super().extra_template_kwargs,
         import_statement=self.import_statement,
-        symbols_table=self.symbols_table,
+        all_symbols_table=self.make_symbols_table(
+            self.symbol.node.iter_documented_nodes()
+        ),
     )
 
   @property
@@ -258,23 +273,6 @@ class _RootModule(_IsModule):
         """
     )
 
-  @property
-  def symbols_table(self):
-    table = md_utils.Table(header=['', '', ''])
-
-    for n in self.symbol.node.iter_documented_nodes():
-      filename = n.match.filename
-      filename = filename.relative_to(self.filename.parent)
-      filename = os.fspath(filename)
-      filename = filename.removesuffix('.md')
-      table.add_row(
-          f'*{n.match.icon}*',
-          f'[{n.symbol.qualname}]({filename})',
-          f'{n.match.docstring_1line}',
-      )
-
-    return table.make()
-
 
 class _ImplicitlyImportedModule(_IsModule):
   """Filter implicitly imported modules."""
@@ -292,23 +290,11 @@ class _ExternalModule(_IsModule):
     return not self.symbol.belong_to_namespace
 
 
-class _BelongToNamespace(_IsModule):
+class _ApiModule(_IsModule):
+  """Modules or packages."""
 
   def match(self) -> bool:
     return self.symbol.belong_to_namespace
-
-
-class _IsPackage(_IsModule):
-
-  def match(self) -> bool:
-    return self.symbol.is_package
-
-
-class _ApiPackage(_BelongToNamespace, _IsPackage):
-  recurse = True
-
-
-class _ApiModule(_BelongToNamespace, _IsModule):
 
   @property
   def documented(self):
@@ -364,17 +350,6 @@ class _FutureAnnotation(_IsValue):
     return isinstance(self.symbol.value, __future__._Feature)
 
 
-# class _ImportedValue(_IsValue):
-
-#   @property
-#   def documented(self):
-#     # Only document imported values when the parent is a package
-#     return _is_package(self.symbol.parent)
-
-#   def match(self):
-#     return self.symbol.is_imported
-
-
 class _DocumentedValue(_IsValue):
 
   @property
@@ -421,7 +396,7 @@ class _AttributeValue(_DocumentedValue):
 
 
 def _is_package(module: types.ModuleType) -> bool:
-  # TODO(epot): Could also add custom attribute `__docutil__.is_package` so
-  # standard module behave like package.
+  # Have custom attribute so standard module can behave like package.
+  if hasattr(module, '__apitree__'):
+    return module.__apitree__['is_package']
   return module.__name__ == module.__package__
-  # return pathlib.Path(module.__file__).name == '__init__.py'

@@ -2,12 +2,13 @@ from __future__ import annotations
 
 import dataclasses
 import functools
+import importlib
 import types
 from typing import Iterator
 
 from etils import edc, epy
 
-from apitree import symbol_match
+from apitree import structs, symbol_match
 
 
 @dataclasses.dataclass
@@ -56,17 +57,19 @@ class Node:
     return f'{self.symbol.name}={type(self.match).__name__}{child_str}'
 
 
-def get_api_tree(module: types.ModuleType, alias: str = ''):
-  ctx = symbol_match.Context(
-      module_name=module.__name__,
-      alias=alias or module.__name__,
-  )
+def get_api_tree(info: structs.ModuleInfo):
+  module = importlib.import_module(info.api)
+
+  # ctx = symbol_match.Context(
+  #     module_name=module.__name__,
+  #     info,
+  # )
   return Node(
       symbol_match.Symbol(
           name=module.__name__,
           value=module,
           parent=None,
           parent_symb=None,
-          ctx=ctx,
+          ctx=info,
       ),
   )

@@ -3,18 +3,17 @@ import types
 
 from etils import epath, epy
 
-from apitree import symbol_match, tree_extractor
+from apitree import structs, symbol_match, tree_extractor
 
 
 def write_doc(
-    node: tree_extractor.Node | types.ModuleType,
+    info: structs.ModuleInfo,
     *,
     verbose=True,
-    alias: str = None,
+    module_info: structs.ModuleInfo = None,
     root_dir: epath.Path = None,
 ) -> None:
-  if not isinstance(node, tree_extractor.Node):
-    node = tree_extractor.get_api_tree(node, alias=alias)
+  node = tree_extractor.get_api_tree(info)
   if not root_dir:
     root_dir = epath.resource_path(node.symbol.value)
     root_dir = root_dir.parent / 'docs/api'
@@ -30,7 +29,5 @@ def _write_node(root_dir: epath.Path, node: tree_extractor.Node) -> None:
   file.parent.mkdir(exist_ok=True, parents=True)
   file.write_text(epy.dedent(node.match.content))
 
-  for child in node.childs:
-    if not child.match.documented:
-      continue
+  for child in node.documented_childs:
     _write_node(root_dir, child)
