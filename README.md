@@ -1,5 +1,9 @@
 # sphinx-apitree
 
+[![Unittests](https://github.com/conchylicultor/sphinx-apitree/actions/workflows/pytest_and_autopublish.yml/badge.svg)](https://github.com/conchylicultor/sphinx-apitree/actions/workflows/pytest_and_autopublish.yml)
+[![PyPI version](https://badge.fury.io/py/sphinx-apitree.svg)](https://badge.fury.io/py/sphinx-apitree)
+
+
 `apitree` is a small library to generate a ready-to-use documentation with minimal friction!
 
 `apitree` takes care of everything, so you can only focus on the code.
