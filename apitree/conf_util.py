@@ -1,40 +1,40 @@
-import importlib
+import functools
 import pathlib
 from typing import Any
 
 import tomllib
-from etils import epath
+from etils import epath, epy
 
 from apitree import structs, writer
 from apitree.ext import docstring
 
 
-def setup(app):
+def setup(app, *, callbacks):
+  for callback in callbacks:
+    callback()
   # Fix bad ```python md formatting
   docstring.setup(app)
 
 
 def make_project(
+    *,
     modules: dict[str, str] | structs.ModuleInfo,
+    includes_paths: dict[str, str] = {},
     globals: dict[str, Any],
-):
-  root_dir = epath.Path(globals['__file__']).parent  # <repo>/docs/
-  project_name = _get_project_name(root_dir=root_dir.parent)
+) -> None:
+  """Setup the `conf.py`.
 
-  api_dir = root_dir / 'api'
-  if api_dir.exists():
-    api_dir.rmtree()
-  api_dir.mkdir()
+  Args:
+    modules: Top module names to document.
+    includes_paths: Mapping to external files to `docs/` path (e.g.
+      `my_module/submodule/README.md` to `submodule.md`). By default, only
+      files inside `docs/...` can be read
+    globals: The `conf.py` `globals()` dict. Will be mutated.
+  """
+  docs_dir = epath.Path(globals['__file__']).parent  # <repo>/docs/
+  repo_dir = docs_dir.parent
 
-  if isinstance(modules, dict):
-    modules = [
-      structs.ModuleInfo(alias=k, module_name=v) for k, v in modules.items()
-    ]
-  if isinstance(modules, structs.ModuleInfo):
-    modules = [modules]
-
-  for module_info in modules:
-    writer.write_doc(module_info, root_dir=api_dir)
+  project_name = _get_project_name(repo_dir=repo_dir)
 
   globals.update(
       # Project information
@@ -82,12 +82,64 @@ def make_project(
           'undoc-members': True,
       },
       # Register hooks
-      setup=setup,
+      setup=functools.partial(
+          setup,
+          callbacks=[
+              functools.partial(
+                  _write_api_doc, docs_dir=docs_dir, modules=modules
+              ),
+              functools.partial(
+                  _write_include_paths,
+                  repo_dir=repo_dir,
+                  docs_dir=docs_dir,
+                  includes_paths=includes_paths,
+              ),
+          ],
+      ),
   )
 
 
-def _get_project_name(root_dir):
+def _write_api_doc(
+    *,
+    docs_dir: pathlib.Path,
+    modules: dict[str, str] | structs.ModuleInfo,
+):
+  api_dir = docs_dir / 'api'
+  if api_dir.exists():
+    api_dir.rmtree()
+  api_dir.mkdir()
+
+  if isinstance(modules, dict):
+    modules = [
+        structs.ModuleInfo(alias=k, module_name=v) for k, v in modules.items()
+    ]
+  if isinstance(modules, structs.ModuleInfo):
+    modules = [modules]
+
+  for module_info in modules:
+    writer.write_doc(module_info, root_dir=api_dir)
+
+
+def _write_include_paths(
+    *,
+    repo_dir: pathlib.Path,
+    docs_dir: pathlib.Path,
+    includes_paths: dict[str, str],
+):
+  del repo_dir  # Could dynamically compute the `../../../`
+  for repo_path, doc_path in includes_paths.items():
+    # repo_dir.parent / 'etils'
+    content = epy.dedent(
+        f"""
+        ```{{include}} ../{repo_path}
+        ```
+        """
+    )
+    docs_dir.joinpath(doc_path).write_text(content)
+
+
+def _get_project_name(repo_dir):
   # TODO(epot): This hardcode too much assumption on the program
-  path = root_dir / 'pyproject.toml'
+  path = repo_dir / 'pyproject.toml'
   info = tomllib.loads(path.read_text())
   return info['project']['name']
