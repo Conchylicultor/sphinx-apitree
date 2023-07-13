@@ -6,7 +6,7 @@ import tomllib
 from etils import epath, epy
 
 from apitree import structs, writer
-from apitree.ext import docstring
+from apitree.ext import docstring, github_link
 
 
 def setup(app, *, callbacks):
@@ -46,6 +46,7 @@ def make_project(
           'myst_nb',  # Notebook support
           'sphinx.ext.napoleon',  # Numpy-style docstrings
           'sphinx.ext.autodoc',  # API Doc generator
+          'sphinx.ext.linkcode',  # Links to GitHub
           # Others:
           # 'sphinx_autodoc_typehints',
           # 'sphinx.ext.linkcode',
@@ -96,6 +97,8 @@ def make_project(
               ),
           ],
       ),
+      # ---- linkcode -------------------------------------------------
+      linkcode_resolve=github_link.linkcode_resolve,
   )
 
 

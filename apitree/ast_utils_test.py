@@ -39,3 +39,37 @@ def test_extract_import_symbols():
       ast_utils.ImportAlias(namespace='inside_cm', alias='inside_cm'),
       ast_utils.ImportAlias(namespace='inside_cm2', alias='inside_cm2'),
   ]
+
+
+def test_extract_assigment_lines():
+  symbols = ast_utils.extract_assignement_lines(
+      textwrap.dedent(
+          """
+          import i0
+          from i1 import i2
+          import i3 as i4
+
+          a = a1
+          b0, [b1, *b2] = a, b0
+
+          def fn():
+            inside_fn = 123
+
+          c: int = c
+          a.d0 = 123  # Ignored
+          other[d4] = 567  # Ignored too
+
+          with i0 as cm0:
+            inside_cm = 123
+          """
+      )
+  )
+
+  assert symbols == {
+      'a': 6,
+      'b0': 7,
+      'b1': 7,
+      'b2': 7,
+      'c': 12,
+      'inside_cm': 17,
+  }

@@ -5,6 +5,7 @@ import functools
 import os
 import pathlib
 import types
+import typing
 from collections.abc import Callable, Iterator
 from typing import Any
 
@@ -12,6 +13,7 @@ import typing_extensions
 from etils import edc, epath, epy
 
 from apitree import ast_utils, md_utils, tree_extractor
+from apitree.ext import github_link
 
 
 @edc.dataclass
@@ -212,6 +214,7 @@ class _IsModule(_WithDocstring, Match):
         symbols_table=self.make_symbols_table(
             self.symbol.node.documented_childs
         ),
+        **super().extra_template_kwargs,
     )
 
   @property
@@ -361,13 +364,42 @@ class _DocumentedValue(_IsValue):
 # TODO(epot): How to duplicate this with _ImportedValue ?
 
 
-class _TypeAliasValue(_DocumentedValue):
+class _WithSourceLink(Match):
+
+  @property
+  def extra_template_kwargs(self):
+    module_name = self.symbol.parent.__name__
+    filepath = github_link._get_definition_line(module_name, self.symbol.name)
+    source_link = f'{github_link._get_github_url()}/tree/main/{filepath}'
+    return dict(
+        source_link=source_link,
+        **super().extra_template_kwargs,
+    )
+
+
+class _TypeAliasValue(_DocumentedValue, _WithSourceLink):
   icon = 't'
   template_name = 'type_alias'
 
   def match(self):
     # TODO(epot): How to detect `Any`,...
-    return typing_extensions.get_origin(self.symbol.value) is not None
+
+    return (
+        isinstance(self.symbol.value, typing.TypeVar)
+        or typing_extensions.get_origin(self.symbol.value) is not None
+    )
+
+  @property
+  def extra_template_kwargs(self):
+    # TODO(epot): Extract the first and last line of the assignment
+    # module_name = self.symbol.parent.__name__
+    # filepath = github_link._get_definition_line(module_name, self.symbol.name)
+    # source_link = f'{github_link._get_github_url()}/tree/main/{filepath}'
+    source_code = ''
+    return dict(
+        source_code=source_code,
+        **super().extra_template_kwargs,
+    )
 
 
 class _ClassValue(_WithDocstring, _DocumentedValue):
@@ -388,7 +420,7 @@ class _FunctionValue(_WithDocstring, _DocumentedValue):
     )
 
 
-class _AttributeValue(_DocumentedValue):
+class _AttributeValue(_DocumentedValue, _WithSourceLink):
   icon = 'a'
   template_name = 'attribute'
 
