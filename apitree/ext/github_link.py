@@ -28,7 +28,6 @@ def linkcode_resolve(domain, info):
 
 
 def _get_definition_line(module_name, qualname):
-  print(module_name, qualname)
   filename = _rel_filepath(module_name, _module_path(module_name))
 
   # Parse ast to find the line number
@@ -112,3 +111,6 @@ def _get_github_url() -> str:
   url = out.stdout.strip()
   assert url.startswith('https://github.com')
   return url
+
+
+# Could try to use `app.builder.env` to auto-setup the extension

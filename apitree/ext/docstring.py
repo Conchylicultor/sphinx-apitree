@@ -1,5 +1,7 @@
 """Fix bad ```python md formatting."""
 
+from sphinx.application import Sphinx
+
 
 def _preprocess_docstring(app, what, name, obj, options, lines):
   # Modify each line of the docstring
@@ -25,6 +27,6 @@ def _preprocess_docstring(app, what, name, obj, options, lines):
   lines[:] = new_lines
 
 
-def setup(app):
+def setup(app: Sphinx):
   # Fix bad ```python md formatting
   app.connect('autodoc-process-docstring', _preprocess_docstring)

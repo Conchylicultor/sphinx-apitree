@@ -1,19 +1,18 @@
 import functools
 import pathlib
+import tomllib
 from typing import Any
 
-import tomllib
+import sphinx
 from etils import epath, epy
 
 from apitree import structs, writer
-from apitree.ext import docstring, github_link
+from apitree.ext import github_link
 
 
 def setup(app, *, callbacks):
   for callback in callbacks:
     callback()
-  # Fix bad ```python md formatting
-  docstring.setup(app)
 
 
 def make_project(
@@ -53,6 +52,9 @@ def make_project(
           # 'sphinx.ext.inheritance_diagram',
           # 'autoapi.extension',
           # 'myst_parser',
+          # API Tree
+          'apitree.ext.docstring',  # Fix bad ```python md formatting
+          'apitree.ext.auto_ref',  # Add cross ref for inline code
       ],
       exclude_patterns=[
           '_build',

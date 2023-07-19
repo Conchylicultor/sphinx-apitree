@@ -56,7 +56,7 @@ class Symbol:
     return Match.root_match(self)
 
   @functools.cached_property
-  def qualname(self) -> bool:
+  def qualname(self) -> str:
     """Exemple: `dca.typing.Float`."""
     if self.parent_symb is None:  # root node
       # assert self.ctx.module_name == self.name
@@ -64,7 +64,7 @@ class Symbol:
     return f'{self.parent_symb.symbol.qualname}.{self.name}'
 
   @functools.cached_property
-  def qualname_no_alias(self) -> bool:
+  def qualname_no_alias(self) -> str:
     """Exemple: `dataclass_array.typing.Float`."""
     if self.parent_symb is None:  # root node
       return self.name

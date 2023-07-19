@@ -8,7 +8,7 @@ from typing import Iterator
 
 from etils import edc, epy
 
-from apitree import structs, symbol_match
+from apitree import context, structs, symbol_match
 
 
 @dataclasses.dataclass
@@ -17,6 +17,7 @@ class Node:
 
   def __post_init__(self):
     self.symbol.node = self
+    context.add_ref(self)
 
   @property
   def match(self):
