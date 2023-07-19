@@ -13,13 +13,13 @@ class Context:
     self.refs: dict[str, list[tree_extractor.Node]] = collections.defaultdict(list)
 
 
-def get_ref(name: str) -> Optional[str]:
+def get_ref(name: str) -> Optional[tree_extractor.Node]:
   matches = _context.refs.get(name)
   if not matches:
     return None
   if len(matches) != 1:
     return None
-  return os.fspath(matches[0].match.filename)
+  return  matches[0]
 
 
 def add_ref(node: tree_extractor.Node) -> None:
