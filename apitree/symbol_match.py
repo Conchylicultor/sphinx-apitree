@@ -66,9 +66,10 @@ class Symbol:
   @functools.cached_property
   def qualname_no_alias(self) -> str:
     """Exemple: `dataclass_array.typing.Float`."""
-    if self.parent_symb is None:  # root node
-      return self.name
-    return f'{self.parent_symb.symbol.qualname_no_alias}.{self.name}'
+    if isinstance(self.value, types.ModuleType):
+      return self.value.__name__
+    else:
+      return f'{self.parent_symb.symbol.qualname_no_alias}.{self.name}'
 
   # Return type
 
