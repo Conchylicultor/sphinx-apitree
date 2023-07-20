@@ -36,6 +36,7 @@ dev = [
     # Development deps (linting, formating,...)
     "pylint>=2.6.0",
     "pyink",
+    "sphinx-apitree[ext]"
 ]
 # Extensions used by `apitree.make_project`
 ext = [
