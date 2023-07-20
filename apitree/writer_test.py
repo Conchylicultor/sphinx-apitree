@@ -1,7 +1,7 @@
 """."""
 
 import pytest
-import visu3d
+# import visu3d
 from etils import enp, epath, epy, lazy_imports
 
 from apitree import structs, tree_extractor, writer
