@@ -131,16 +131,24 @@ def _write_include_paths(
     docs_dir: pathlib.Path,
     includes_paths: dict[str, str],
 ):
-  del repo_dir  # Could dynamically compute the `../../../`
   for repo_path, doc_path in includes_paths.items():
-    # repo_dir.parent / 'etils'
-    content = epy.dedent(
-        f"""
-        ```{{include}} ../{repo_path}
-        ```
-        """
-    )
-    docs_dir.joinpath(doc_path).write_text(content)
+    src_path = repo_dir / repo_path
+    dst_path = docs_dir / doc_path
+    match repo_path.suffix:
+      case '.md':
+        # repo_dir.parent / 'etils'
+        # Could dynamically compute the `../../../`
+        content = epy.dedent(
+            f"""
+            ```{{include}} ../{repo_path}
+            ```
+            """
+        )
+        dst_path.write_text(content)
+      case '.ipynb':
+        dst_path.write_bytes(src_path.read_bytes())
+      case default:
+        raise ValueError(f'Invalid suffix: {default}')
 
 
 def _get_project_name(repo_dir):

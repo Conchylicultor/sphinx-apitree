@@ -67,7 +67,10 @@ class Symbol:
   def qualname_no_alias(self) -> str:
     """Exemple: `dataclass_array.typing.Float`."""
     if isinstance(self.value, types.ModuleType):
-      return self.value.__name__
+      try:
+        return self.value.__name__
+      except Exception:  # TODO(epot): Better lazy-modules
+        return ''
     else:
       return f'{self.parent_symb.symbol.qualname_no_alias}.{self.name}'
 
@@ -417,7 +420,14 @@ class _FunctionValue(_WithDocstring, _DocumentedValue):
 
   def match(self):
     return isinstance(
-        self.symbol.value, (types.FunctionType, functools.partial)
+        self.symbol.value,
+        (
+            types.FunctionType,
+            types.BuiltinFunctionType,
+            types.BuiltinMethodType,
+            types.MethodType,
+            types.MethodWrapperType,
+        ),
     )
 
 

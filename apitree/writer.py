@@ -10,7 +10,6 @@ def write_doc(
     info: structs.ModuleInfo,
     *,
     verbose=True,
-    module_info: structs.ModuleInfo = None,
     root_dir: epath.Path = None,
 ) -> None:
   node = tree_extractor.get_api_tree(info)
