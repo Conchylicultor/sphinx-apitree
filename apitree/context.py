@@ -28,6 +28,11 @@ def add_ref(node: tree_extractor.Node) -> None:
   if '.' in name:
     _, subname = name.rsplit('.', 1)
     _context.refs[subname].append(node)
+  # `qualname_no_alias` is acually the real module name.
+  # Could also add the real `qualname_no_alias`. For example:
+  # * `kd.typing.XX`  # Public symbol
+  # * `kauldron.typing.XX`  # Alias replaced
+  # * `kauldron.utils.typing.XX`  # Real module location
   if node.symbol.qualname_no_alias != node.symbol.qualname:
     _context.refs[node.symbol.qualname_no_alias].append(node)
 
