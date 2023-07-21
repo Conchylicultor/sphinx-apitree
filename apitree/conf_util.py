@@ -134,7 +134,7 @@ def _write_include_paths(
   for repo_path, doc_path in includes_paths.items():
     src_path = repo_dir / repo_path
     dst_path = docs_dir / doc_path
-    match repo_path.suffix:
+    match src_path.suffix:
       case '.md':
         # repo_dir.parent / 'etils'
         # Could dynamically compute the `../../../`
