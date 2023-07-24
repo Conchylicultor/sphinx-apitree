@@ -10,7 +10,7 @@ import typing
 from docutils import nodes
 from sphinx.application import Sphinx
 
-from apitree import context
+from apitree import context, debug_utils
 
 
 def _is_inside_link(node: nodes.Node):
@@ -67,4 +67,4 @@ def _relative_path(p0: pathlib.Path, p1: pathlib.Path) -> pathlib.Path:
 
 
 def setup(app: Sphinx):
-    app.connect('doctree-resolved', _add_refs)
+    app.connect('doctree-resolved', debug_utils.print_error()(_add_refs))

@@ -218,6 +218,7 @@ class _IsModule(_WithDocstring, Match):
         symbols_table=self.make_symbols_table(
             self.symbol.node.documented_childs
         ),
+        source_link=github_link.get_module_link(self.symbol.value.__name__),
         **super().extra_template_kwargs,
     )
 
@@ -370,13 +371,32 @@ class _DocumentedValue(_IsValue):
 
 class _WithSourceLink(Match):
 
+  @functools.cached_property
+  def _ast_symbol(self):
+    module_name = self.symbol.parent.__name__
+    name = self.symbol.name
+
+    return ast_utils.extract_last_symbol(module_name, name)
+
+  @property
+  def docstring_1line(self) -> str:
+    doc = ' '.join(self._ast_symbol.docstring.split('\n'))
+    if len(doc) > 83:  # Truncate
+      return doc[:80] + '...'
+    else:
+      return doc
+
   @property
   def extra_template_kwargs(self):
     module_name = self.symbol.parent.__name__
-    filepath = github_link._get_definition_line(module_name, self.symbol.name)
-    source_link = f'{github_link._get_github_url()}/tree/main/{filepath}'
+    name = self.symbol.name
+
+    source_link = github_link.get_assignement_link(module_name, name)
+
     return dict(
         source_link=source_link,
+        source_code=self._ast_symbol.code,
+        docstring=self._ast_symbol.docstring,
         **super().extra_template_kwargs,
     )
 
@@ -391,18 +411,6 @@ class _TypeAliasValue(_DocumentedValue, _WithSourceLink):
     return (
         isinstance(self.symbol.value, typing.TypeVar)
         or typing_extensions.get_origin(self.symbol.value) is not None
-    )
-
-  @property
-  def extra_template_kwargs(self):
-    # TODO(epot): Extract the first and last line of the assignment
-    # module_name = self.symbol.parent.__name__
-    # filepath = github_link._get_definition_line(module_name, self.symbol.name)
-    # source_link = f'{github_link._get_github_url()}/tree/main/{filepath}'
-    source_code = ''
-    return dict(
-        source_code=source_code,
-        **super().extra_template_kwargs,
     )
 
 
@@ -427,6 +435,7 @@ class _FunctionValue(_WithDocstring, _DocumentedValue):
             types.BuiltinMethodType,
             types.MethodType,
             types.MethodWrapperType,
+            functools._lru_cache_wrapper,
         ),
     )
 
@@ -434,8 +443,6 @@ class _FunctionValue(_WithDocstring, _DocumentedValue):
 class _AttributeValue(_DocumentedValue, _WithSourceLink):
   icon = 'a'
   template_name = 'attribute'
-
-  # TODO(epot): Extract doc from parent
 
 
 def _is_package(module: types.ModuleType) -> bool:

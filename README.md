@@ -72,9 +72,36 @@ To add `api/my_module/index` somewhere in your toctree, like:
             - docs
     ```
 
+## Options
+
+By default, `apitree` tries to infer everything automatically. However there's sometimes
+times where the user want to overwrite the default choices.
+
+*   Package vs module: By default, all `__init__.py` define the public API (imports documented), while
+    the modules (`module.py`) define the implementation (imports not documented).
+    You can explicitly mark a module as package, so it's import are documented, by adding in the
+    module definition:
+
+    ```python
+    __apitree__ = dict(
+        is_package=True,
+    )
+    ```
+
 ## Examples of projects using apitree
 
 * https://github.com/google-research/visu3d (https://visu3d.readthedocs.io/)
 * https://github.com/google-research/dataclass_array (https://dataclass-array.readthedocs.io/)
 * https://github.com/google-research/etils (https://etils.readthedocs.io/)
 * https://github.com/google-research/kauldron (https://kauldron.readthedocs.io/)
+
+Generated with:
+
+```
+echo start \
+&& cd ../visu3d          && sphinx-build -b html docs/ docs/_build \
+&& cd ../dataclass_array && sphinx-build -b html docs/ docs/_build \
+&& cd ../etils           && sphinx-build -b html docs/ docs/_build \
+&& cd ../kauldron        && sphinx-build -b html docs/ docs/_build \
+&& echo finished
+```

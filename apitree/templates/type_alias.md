@@ -2,8 +2,8 @@
 
 [[[Source]]]({source_link})
 
+{docstring}
+
 ```python
 {source_code}
 ```
-
-<!-- Could add the code formatted with pyink -->

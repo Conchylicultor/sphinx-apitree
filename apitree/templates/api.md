@@ -1,5 +1,7 @@
 # {qualname}
 
+[[[Source]]]({source_link})
+
 {import_statement}
 
 ```{{eval-rst}}

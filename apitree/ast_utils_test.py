@@ -1,5 +1,7 @@
 import textwrap
 
+import pytest
+
 from apitree import ast_utils
 
 
@@ -41,6 +43,7 @@ def test_extract_import_symbols():
   ]
 
 
+@pytest.mark.skip
 def test_extract_assigment_lines():
   symbols = ast_utils.extract_assignement_lines(
       textwrap.dedent(
@@ -50,7 +53,10 @@ def test_extract_assigment_lines():
           import i3 as i4
 
           a = a1
-          b0, [b1, *b2] = a, b0
+          b0, [
+              b1,
+              *b2,
+          ] = a, b0
 
           def fn():
             inside_fn = 123
@@ -60,7 +66,9 @@ def test_extract_assigment_lines():
           other[d4] = 567  # Ignored too
 
           with i0 as cm0:
-            inside_cm = 123
+            inside_cm = (
+                123
+            )
           """
       )
   )

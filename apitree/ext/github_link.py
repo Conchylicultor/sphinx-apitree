@@ -6,37 +6,46 @@ import inspect
 import pathlib
 import subprocess
 
-from apitree import ast_utils
+from apitree import ast_utils, debug_utils, import_utils
 
 
+@debug_utils.print_error()
 def linkcode_resolve(domain, info):
   if domain != 'py':
     return None
   if not info['module']:
     return None
+  return _linkcode_resolve(info['module'], info['fullname'])
 
-  # filepath = _get_filepath(info['module'])
-  filepath = _get_lines_suffix(info['module'], info['fullname'])
-  if not filepath:
-    if '.' in info['fullname']:
+
+def _linkcode_resolve(module_name: str, fullname: str) -> str:
+  suffix = _get_lines_suffix(module_name, fullname)
+  if not suffix:
+    if '.' in fullname:
       # Attributes are not documented (as they beloong to different files)
       return None
     # Fallback on the module name.
-    # TODO(epot): Should point where the object is created
-    filepath = _get_definition_line(info['module'], info['fullname'])
-  return f'{_get_github_url()}/tree/main/{filepath}'
+    symbol = ast_utils.extract_last_symbol(module_name, fullname)
+    if symbol is None:
+      raise ValueError(f"{module_name}:{fullname} not found.")
+    suffix = f'{symbol.filename}{symbol.git_lno}'
+  return f'{_get_github_url()}/tree/main/{suffix}'
 
 
-def _get_definition_line(module_name, qualname):
-  filename = _rel_filepath(module_name, _module_path(module_name))
+def get_module_link(module_name):
+  path = import_utils.repo_relative_path(module_name)
+  return f'{_get_github_url()}/tree/main/{path}'
 
-  # Parse ast to find the line number
-  assignements = _get_symbols(module_name)
 
-  if qualname in assignements:
-    return f'{filename}#L{assignements[qualname]}'
-  else:
-    return filename
+def get_assignement_link(module_name, name):
+  symbol = ast_utils.extract_last_symbol(module_name, name)
+  if symbol is None:
+    raise ValueError(f'{module_name}:{name} not found.')
+
+  source_link = (
+      f'{_get_github_url()}/tree/main/{symbol.filename}{symbol.git_lno}'
+  )
+  return source_link
 
 
 def _get_lines_suffix(module_name: str, qualname: str) -> str:
@@ -51,8 +60,13 @@ def _get_lines_suffix(module_name: str, qualname: str) -> str:
 
   obj = inspect.unwrap(obj)
 
+  # After unwrapping, the object might be in a different file
   try:
-    filepath = inspect.getsourcefile(obj)
+    _module = inspect.getmodule(obj)
+    if _module is None:  # Class attributes (e.g. `x: int`)
+      return ''
+      # raise ValueError(f'Not found: {module_name} {qualname}')
+    module_name = _module.__name__
   except TypeError:
     return ''
 
@@ -62,41 +76,13 @@ def _get_lines_suffix(module_name: str, qualname: str) -> str:
     return ''
 
   # Detect if file is inside the project (and not `Union` or similar)
-  filepath = _rel_filepath(module_name, filepath)
+  filepath = import_utils.repo_relative_path(module_name)
   if not filepath:
     return ''
 
   start = lines[1]
   end = start + len(lines[0]) - 1
   return f'{filepath}#L{start}-L{end}'
-
-
-def _rel_filepath(module_name, filepath):
-  root_dir = _root_path(module_name)
-  filepath = pathlib.Path(filepath)
-  try:
-    return filepath.relative_to(root_dir)
-  except ValueError:
-    return None
-
-
-@functools.cache
-def _module_path(module_name) -> pathlib.Path:
-  root_module = importlib.import_module(module_name)
-  root_module_path = inspect.getsourcefile(root_module)
-  root_module_path = pathlib.Path(root_module_path)
-  return root_module_path
-
-
-@functools.cache
-def _get_symbols(module_name) -> dict[str, int]:
-  path = _module_path(module_name)
-  return ast_utils.extract_assignement_lines(path.read_text())
-
-
-def _root_path(module_name) -> pathlib.Path:
-  module_name = module_name.split('.', 1)[0]
-  return _module_path(module_name).parent.parent
 
 
 @functools.cache

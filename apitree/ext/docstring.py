@@ -2,6 +2,8 @@
 
 from sphinx.application import Sphinx
 
+from apitree import debug_utils
+
 
 def _preprocess_docstring(app, what, name, obj, options, lines):
   # Modify each line of the docstring
@@ -29,4 +31,7 @@ def _preprocess_docstring(app, what, name, obj, options, lines):
 
 def setup(app: Sphinx):
   # Fix bad ```python md formatting
-  app.connect('autodoc-process-docstring', _preprocess_docstring)
+  app.connect(
+      'autodoc-process-docstring',
+      debug_utils.print_error()(_preprocess_docstring),
+  )
