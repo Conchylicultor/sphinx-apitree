@@ -112,7 +112,7 @@ class _SymbolDefinition:
         break
       line = line.removeprefix('# ')
       docstring_lines.append(line)
-    return '\n'.join(docstring_lines)
+    return '\n'.join(reversed(docstring_lines))
 
   @property
   def code(self) -> str:
