@@ -435,7 +435,7 @@ class _FunctionValue(_WithDocstring, _DocumentedValue):
             types.BuiltinMethodType,
             types.MethodType,
             types.MethodWrapperType,
-            functools._lru_cache_wrapper,
+            functools._lru_cache_wrapper,  # `@functools.wraps`
         ),
     )
 

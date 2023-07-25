@@ -3,6 +3,7 @@
 import functools
 import importlib
 import inspect
+import os
 import pathlib
 import subprocess
 
@@ -27,7 +28,7 @@ def _linkcode_resolve(module_name: str, fullname: str) -> str:
     # Fallback on the module name.
     symbol = ast_utils.extract_last_symbol(module_name, fullname)
     if symbol is None:
-      raise ValueError(f"{module_name}:{fullname} not found.")
+      raise ValueError(f'{module_name}:{fullname} not found.')
     suffix = f'{symbol.filename}{symbol.git_lno}'
   return f'{_get_github_url()}/tree/main/{suffix}'
 
@@ -58,16 +59,18 @@ def _get_lines_suffix(module_name: str, qualname: str) -> str:
     except AttributeError:
       return ''  # Object unavailable
 
-  obj = inspect.unwrap(obj)
+  # Unwrap until the last file inside the project
+  try:
+    obj = _unwraps(obj)
+  except _NotBelongToModule:
+    # For example:
+    # `@functools.wraps(external_fn)(fn)`
+    # `from external_module import fn`
+    return os.fspath(import_utils.repo_relative_path(module_name))
 
   # After unwrapping, the object might be in a different file
-  try:
-    _module = inspect.getmodule(obj)
-    if _module is None:  # Class attributes (e.g. `x: int`)
-      return ''
-      # raise ValueError(f'Not found: {module_name} {qualname}')
-    module_name = _module.__name__
-  except TypeError:
+  module_name = _get_module_name(obj)
+  if module_name is None:
     return ''
 
   try:
@@ -100,3 +103,39 @@ def _get_github_url() -> str:
 
 
 # Could try to use `app.builder.env` to auto-setup the extension
+
+
+def _unwraps(fn):
+  if not hasattr(fn, '__wrapped__'):  # Not a function, decorator
+    return fn
+
+  # Note: Do not support cycles.
+  chain = [fn]
+  while hasattr(fn, '__wrapped__'):
+    fn = fn.__wrapped__
+    chain.append(fn)
+
+  for fn in reversed(chain):
+    module_name = _get_module_name(fn)
+    if module_name is None:  # Class attributes (e.g. `x: int`)
+      continue
+    if import_utils.belong_to_repo(module_name):
+      return fn
+  # Symbol belong to another module
+  raise _NotBelongToModule(f'Not bellong to repo for symbol {fn}')
+
+
+def _get_module_name(obj) -> str:
+  try:
+    _module = inspect.getmodule(obj)
+    if _module is None:  # Class attributes (e.g. `x: int`)
+      return None
+      # raise ValueError(f'Not found: {module_name} {qualname}')
+    module_name = _module.__name__
+  except TypeError:
+    return None
+  return module_name
+
+
+class _NotBelongToModule(Exception):
+  pass

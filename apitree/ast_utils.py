@@ -82,7 +82,7 @@ class _SymbolDefinition:
 
   @property
   def belong_to_project(self) -> bool:
-    return import_utils.repo_relative_path(self.module_name) is not None
+    return import_utils.belong_to_repo(self.module_name)
 
   @property
   def filename(self) -> str:
@@ -130,6 +130,10 @@ class _ImportedSymbol(_SymbolDefinition):
   def last_project_symbol(self) -> _SymbolDefinition:
     if not self.belong_to_project:
       raise ValueError(f'{self.module_name} is not part of the project.')
+
+    # No need to load the child if it do not belong to the module
+    if import_utils.repo_relative_path(self.import_module_name) is None:
+      return self
 
     sub_symbols = extract_symbols(self.import_module_name)
     if self.symbol_name not in sub_symbols:
@@ -228,7 +232,10 @@ def extract_symbols(module_name: str) -> dict[str, _SymbolDefinition]:
 def extract_last_symbol(
     module_name: str, name: str
 ) -> _SymbolDefinition | None:
-  symbols = extract_symbols(module_name)
+  try:
+    symbols = extract_symbols(module_name)
+  except Exception as e:
+    epy.reraise(e, prefix=f'{module_name}:{name}: ')
   if name not in symbols:
     return
   symbol = symbols[name]

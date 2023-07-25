@@ -39,6 +39,10 @@ def module_lines(module_name: str) -> list[str]:
   return filepath.read_text().split('\n')
 
 
+def belong_to_repo(module_name: str) -> bool:
+  return repo_relative_path(module_name) is not None
+
+
 def repo_relative_path(module_name: str) -> pathlib.Path:
   """."""
   filepath = abs_path(module_name)
