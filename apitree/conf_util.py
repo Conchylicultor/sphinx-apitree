@@ -1,12 +1,14 @@
 import functools
+import os
 import pathlib
+import sys
 import tomllib
 from typing import Any
 
 import sphinx
 from etils import epath, epy
 
-from apitree import structs, writer
+from apitree import import_utils, structs, writer
 from apitree.ext import github_link
 
 
@@ -30,8 +32,13 @@ def make_project(
       files inside `docs/...` can be read
     globals: The `conf.py` `globals()` dict. Will be mutated.
   """
+
   docs_dir = epath.Path(globals['__file__']).parent  # <repo>/docs/
   repo_dir = docs_dir.parent
+  # TODO(epot): Fragile if one of the module is already imported.
+  # If so, should check that imported modules are
+  # `import_utils.belong_to_project`
+  sys.path.insert(0, os.fspath(repo_dir))
 
   project_name = _get_project_name(repo_dir=repo_dir)
 
