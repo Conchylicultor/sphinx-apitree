@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import dataclasses
+import enum
 import functools
 import os
 import pathlib
@@ -22,6 +23,15 @@ class Context:
   module_name: str
   alias: str
   # visited: dict[str, _RefNode] = dataclasses.field(default_factory=dict)
+
+
+class SymbolType(enum.StrEnum):
+  MODULE = enum.auto()
+  CLASS = enum.auto()
+  FUNCTION = enum.auto()
+  ATTRIBUTE = enum.auto()
+  TYPING = enum.auto()
+  UNKNOWN = enum.auto()
 
 
 @edc.dataclass
@@ -84,7 +94,7 @@ class Match:
   documented = True
   template_name: str | None = None
   docstring_1line: str = ''
-  icon: str = ''
+  icon: SymbolType = SymbolType.UNKNOWN
 
   extra_template_kwargs = {}
 
@@ -156,7 +166,7 @@ class Match:
     )
 
   def make_symbols_table(self, nodes: Iterator[tree_extractor.Node]):
-    table = md_utils.Table(header=['', '', ''])
+    table = md_utils.Table(header=['', ''])
 
     for n in nodes:
       filename = n.match.filename
@@ -164,12 +174,27 @@ class Match:
       filename = os.fspath(filename)
       filename = filename.removesuffix('.md')
       table.add_row(
-          f'*{n.match.icon}*',
+          # f'*{n.match.icon}*',
           f'[{n.symbol.qualname}]({filename})',
           f'{n.match.docstring_1line}',
       )
 
     return table.make()
+
+  def make_symbols_tables(self, nodes: tree_extractor.Node) -> str:
+    type_to_childs = epy.groupby(nodes, key=lambda n: n.match.icon)
+    lines = []
+    for type_ in SymbolType:
+      if type_ not in type_to_childs:
+        continue
+      lines.append('')
+      lines.append(f'### {type_.capitalize()}')
+      lines.append('')
+
+      childs = type_to_childs[type_]
+      childs = sorted(childs, key=lambda n: n.symbol.qualname)
+      lines.append(self.make_symbols_table(childs))
+    return '\n'.join(lines)
 
 
 def _not(cls: type[Match]) -> Callable[[Match], bool]:
@@ -197,7 +222,7 @@ class _WithDocstring(Match):
 
 
 class _IsModule(_WithDocstring, Match):
-  icon = 'm'
+  icon = SymbolType.MODULE
   template_name = 'module'
 
   def match(self) -> bool:
@@ -215,7 +240,7 @@ class _IsModule(_WithDocstring, Match):
   def extra_template_kwargs(self):
     return dict(
         toctree=self.toctree,
-        symbols_table=self.make_symbols_table(
+        symbols_table=self.make_symbols_tables(
             self.symbol.node.documented_childs
         ),
         source_link=github_link.get_module_link(self.symbol.value.__name__),
@@ -250,7 +275,7 @@ class _RootModule(_IsModule):
     return dict(
         **super().extra_template_kwargs,
         import_statement=self.import_statement,
-        all_symbols_table=self.make_symbols_table(
+        all_symbols_table=self.make_symbols_tables(
             self.symbol.node.iter_documented_nodes()
         ),
     )
@@ -402,7 +427,7 @@ class _WithSourceLink(Match):
 
 
 class _TypeAliasValue(_DocumentedValue, _WithSourceLink):
-  icon = 't'
+  icon = SymbolType.TYPING
   template_name = 'type_alias'
 
   def match(self):
@@ -415,7 +440,7 @@ class _TypeAliasValue(_DocumentedValue, _WithSourceLink):
 
 
 class _ClassValue(_WithDocstring, _DocumentedValue):
-  icon = 'c'
+  icon = SymbolType.CLASS
   template_name = 'class'
 
   def match(self):
@@ -423,7 +448,7 @@ class _ClassValue(_WithDocstring, _DocumentedValue):
 
 
 class _FunctionValue(_WithDocstring, _DocumentedValue):
-  icon = 'f'
+  icon = SymbolType.FUNCTION
   template_name = 'function'
 
   def match(self):
@@ -441,7 +466,7 @@ class _FunctionValue(_WithDocstring, _DocumentedValue):
 
 
 class _AttributeValue(_DocumentedValue, _WithSourceLink):
-  icon = 'a'
+  icon = SymbolType.ATTRIBUTE
   template_name = 'attribute'
 
 

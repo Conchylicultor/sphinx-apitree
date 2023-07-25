@@ -32,6 +32,7 @@ def make_project(
       files inside `docs/...` can be read
     globals: The `conf.py` `globals()` dict. Will be mutated.
   """
+  _clear_etils()
 
   docs_dir = epath.Path(globals['__file__']).parent  # <repo>/docs/
   repo_dir = docs_dir.parent
@@ -42,6 +43,27 @@ def make_project(
 
   project_name = _get_project_name(repo_dir=repo_dir)
 
+  # API generator
+  api_ext = 'sphinx.ext.autodoc'
+  api_ext_config = dict(
+      autodoc_typehints_format='fully-qualified',  # `x.y.MyClass`
+      autodoc_default_options={
+          'members': True,
+          'show-inheritance': True,
+          'member-order': 'bysource',
+          'undoc-members': True,
+      },
+  )
+
+  # Uncomment to try autoapi
+  # api_ext = 'autoapi.extension'
+  # api_ext_config = dict(
+  #     autoapi_dirs=[f'../{project_name}'],
+  #     autoapi_ignore=['*migrations*', '*_test.py'],
+  #     autoapi_keep_files=True,
+  #     autoapi_python_use_implicit_namespaces=True,
+  # )
+
   globals.update(
       # Project information
       project=project_name,
@@ -49,15 +71,14 @@ def make_project(
       author=f'{project_name} authors',
       # General configuration
       extensions=[
+          api_ext,  # API Doc generator
           'myst_nb',  # Notebook support
           'sphinx.ext.napoleon',  # Numpy-style docstrings
-          'sphinx.ext.autodoc',  # API Doc generator
-          'sphinx.ext.linkcode',  # Links to GitHub
+          # 'sphinx.ext.linkcode',  # Links to GitHub
           # Others:
           # 'sphinx_autodoc_typehints',
           # 'sphinx.ext.linkcode',
           # 'sphinx.ext.inheritance_diagram',
-          # 'autoapi.extension',
           # 'myst_parser',
           # API Tree
           'apitree.ext.docstring',  # Fix bad ```python md formatting
@@ -83,14 +104,8 @@ def make_project(
       myst_heading_anchors=3,
       # ---- myst_nb -------------------------------------------------
       nb_execution_mode='off',
-      # ---- autodoc -------------------------------------------------
-      autodoc_typehints_format='fully-qualified',  # `x.y.MyClass`
-      autodoc_default_options={
-          'members': True,
-          'show-inheritance': True,
-          'member-order': 'bysource',
-          'undoc-members': True,
-      },
+      # ---- api extension -------------------------------------------------
+      **api_ext_config,
       # Register hooks
       setup=functools.partial(
           setup,
@@ -163,3 +178,11 @@ def _get_project_name(repo_dir):
   path = repo_dir / 'pyproject.toml'
   info = tomllib.loads(path.read_text())
   return info['project']['name']
+
+
+def _clear_etils():
+  # For re-triggering etils import (as it is used both for documentation
+  # and in apitree
+  for module_name in list(sys.modules):
+    if module_name.startswith('etils'):
+      del sys.modules[module_name]
