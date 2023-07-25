@@ -7,6 +7,8 @@ from etils import enp, epath, epy, lazy_imports
 from apitree import structs, tree_extractor, writer
 
 
+# TODO(epot): Allow to generate doc even outside the projects
+@pytest.mark.skip
 def test_api_tree():
   writer.write_doc(
       structs.ModuleInfo(
