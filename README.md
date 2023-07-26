@@ -39,10 +39,14 @@ To add `api/my_module/index` somewhere in your toctree, like:
 
 ## Features
 
-* Theme
-* Auto-generate the API tree, with better features
+* All included: Single function call include the theme, the API generation,...
+* Auto-generate the API tree:
   * Do not require `__all__` (smart detect of which symbols are documented)
   * Add expandable toc tree with all symbols
+* Add links to `GitHub`.
+* Contrary to `autodoc` and `apitree`, it also document:
+  * Type annotations (`Union[]`, ...)
+  * Attributes
 * ...
 
 ## Installation in a project

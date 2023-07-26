@@ -35,17 +35,22 @@ def make_project(
 
   docs_dir = epath.Path(globals['__file__']).parent  # <repo>/docs/
   repo_dir = docs_dir.parent
-  # TODO(epot): Fragile if one of the module is already imported.
-  # If so, should check that imported modules are
-  # `import_utils.belong_to_project`
+
+  project_name = _get_project_name(repo_dir=repo_dir)
 
   # Clear etils before (to allow documenting `etils` itself).
   # Otherwise, `etils` imported is the one from `pip install` and
   # not the one from `git clone`.
-  _clear_etils()
-  sys.path.insert(0, os.fspath(repo_dir))
+  # This has to be done after `epath.Path()` call, which has a lazy-import
+  if project_name == 'etils':
+    _clear_etils()
 
-  project_name = _get_project_name(repo_dir=repo_dir)
+  # TODO(epot): Fragile if one of the module is already imported.
+  # If so, should check that imported modules are
+  # `import_utils.belong_to_project`
+  # Allow import without installing the project first (dependencies
+  # still have to be installed.
+  sys.path.insert(0, os.fspath(repo_dir))
 
   # API generator
   api_ext = 'sphinx.ext.autodoc'
@@ -78,7 +83,7 @@ def make_project(
           api_ext,  # API Doc generator
           'myst_nb',  # Notebook support
           'sphinx.ext.napoleon',  # Numpy-style docstrings
-          # 'sphinx.ext.linkcode',  # Links to GitHub
+          'sphinx.ext.linkcode',  # Links to GitHub
           # Others:
           # 'sphinx_autodoc_typehints',
           # 'sphinx.ext.linkcode',
