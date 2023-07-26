@@ -32,13 +32,17 @@ def make_project(
       files inside `docs/...` can be read
     globals: The `conf.py` `globals()` dict. Will be mutated.
   """
-  _clear_etils()
 
   docs_dir = epath.Path(globals['__file__']).parent  # <repo>/docs/
   repo_dir = docs_dir.parent
   # TODO(epot): Fragile if one of the module is already imported.
   # If so, should check that imported modules are
   # `import_utils.belong_to_project`
+
+  # Clear etils before (to allow documenting `etils` itself).
+  # Otherwise, `etils` imported is the one from `pip install` and
+  # not the one from `git clone`.
+  _clear_etils()
   sys.path.insert(0, os.fspath(repo_dir))
 
   project_name = _get_project_name(repo_dir=repo_dir)
