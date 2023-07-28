@@ -206,13 +206,26 @@ class _GlobalAssignementExtractor(ast.NodeVisitor):
       )
     self.generic_visit(node)
 
+  def visit_FunctionDef(self, node: ast.FunctionDef):
+    self.symbols[node.name] = _DeclaredSymbol(
+        module_name=self._module_name,
+        start=node.lineno,
+        end=node.end_lineno,
+    )
+    # Do not recurse inside function
+
+  def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef):
+    self.visit_FunctionDef(node)
+    # Do not recurse inside function
+
+  def visit_ClassDef(self, node: ast.ClassDef):
+    self.visit_FunctionDef(node)
+    # Do not recurse inside function
+
   def generic_visit(self, node):
     if isinstance(
         node,
         (
-            ast.FunctionDef,
-            ast.AsyncFunctionDef,
-            ast.ClassDef,
             ast.Attribute,  # x.y
             ast.Subscript,  # x[0]
         ),

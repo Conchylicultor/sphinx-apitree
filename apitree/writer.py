@@ -3,7 +3,7 @@ import types
 
 from etils import epath, epy
 
-from apitree import structs, symbol_match, tree_extractor
+from apitree import context, structs, symbol_match, tree_extractor
 
 
 def write_doc(
@@ -12,6 +12,8 @@ def write_doc(
     verbose=True,
     root_dir: epath.Path = None,
 ) -> None:
+  # TODO(epot): How to use the correct scope for extensions ?
+  context.ctx.curr = info
   node = tree_extractor.get_api_tree(info)
   if not root_dir:
     root_dir = epath.resource_path(node.symbol.value)

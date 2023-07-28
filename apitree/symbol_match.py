@@ -3,6 +3,7 @@ from __future__ import annotations
 import dataclasses
 import enum
 import functools
+import inspect
 import os
 import pathlib
 import types
@@ -13,7 +14,7 @@ from typing import Any
 import typing_extensions
 from etils import edc, epath, epy
 
-from apitree import ast_utils, md_utils, tree_extractor
+from apitree import ast_utils, context, md_utils, tree_extractor
 from apitree.ext import github_link
 
 
@@ -452,15 +453,18 @@ class _FunctionValue(_WithDocstring, _DocumentedValue):
   template_name = 'function'
 
   def match(self):
+    # Unwrap to support class decorator like:
+    # * `@functools.cache`
+    # * `@jax.jit`
+    obj = inspect.unwrap(self.symbol.value)
     return isinstance(
-        self.symbol.value,
+        obj,
         (
             types.FunctionType,
             types.BuiltinFunctionType,
             types.BuiltinMethodType,
             types.MethodType,
             types.MethodWrapperType,
-            functools._lru_cache_wrapper,  # `@functools.wraps`
         ),
     )
 
@@ -474,4 +478,6 @@ def _is_package(module: types.ModuleType) -> bool:
   # Have custom attribute so standard module can behave like package.
   if hasattr(module, '__apitree__'):
     return module.__apitree__['is_package']
+  if module.__name__ in context.ctx.curr.should_be_packages:
+    return True
   return module.__name__ == module.__package__

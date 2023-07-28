@@ -19,7 +19,7 @@ def setup(app, *, callbacks):
 
 def make_project(
     *,
-    modules: dict[str, str] | structs.ModuleInfo,
+    modules: dict[str, str] | structs.ModuleInfo | list[structs.ModuleInfo],
     includes_paths: dict[str, str] = {},
     globals: dict[str, Any],
 ) -> None:
@@ -138,7 +138,7 @@ def make_project(
 def _write_api_doc(
     *,
     docs_dir: pathlib.Path,
-    modules: dict[str, str] | structs.ModuleInfo,
+    modules: dict[str, str] | structs.ModuleInfo | list[structs.ModuleInfo],
 ):
   api_dir = docs_dir / 'api'
   if api_dir.exists():

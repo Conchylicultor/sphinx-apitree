@@ -7,7 +7,7 @@ import os
 import pathlib
 import subprocess
 
-from apitree import ast_utils, debug_utils, import_utils
+from apitree import ast_utils, context, debug_utils, import_utils
 
 
 @debug_utils.print_error()
@@ -30,12 +30,12 @@ def _linkcode_resolve(module_name: str, fullname: str) -> str:
     if symbol is None:
       raise ValueError(f'{module_name}:{fullname} not found.')
     suffix = f'{symbol.filename}{symbol.git_lno}'
-  return f'{_get_github_url()}/tree/main/{suffix}'
+  return f'{context.ctx.curr.github_url}/tree/main/{suffix}'
 
 
 def get_module_link(module_name):
   path = import_utils.repo_relative_path(module_name)
-  return f'{_get_github_url()}/tree/main/{path}'
+  return f'{context.ctx.curr.github_url}/tree/main/{path}'
 
 
 def get_assignement_link(module_name, name):
@@ -43,9 +43,7 @@ def get_assignement_link(module_name, name):
   if symbol is None:
     raise ValueError(f'{module_name}:{name} not found.')
 
-  source_link = (
-      f'{_get_github_url()}/tree/main/{symbol.filename}{symbol.git_lno}'
-  )
+  source_link = f'{context.ctx.curr.github_url}/tree/main/{symbol.filename}{symbol.git_lno}'
   return source_link
 
 
@@ -89,7 +87,7 @@ def _get_lines_suffix(module_name: str, qualname: str) -> str:
 
 
 @functools.cache
-def _get_github_url() -> str:
+def get_github_url() -> str:
   # TODO(epot): Support cross-repo
   out = subprocess.run(
       'git config --get remote.origin.url',

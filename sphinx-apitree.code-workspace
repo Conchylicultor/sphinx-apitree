@@ -1,0 +1,27 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../visu3d"
+		},
+		{
+			"path": "../dataclass_array"
+		},
+		{
+			"path": "../etils"
+		},
+		{
+			"path": "../kauldron"
+		},
+		{
+			"path": "../api"
+		}
+	],
+	"settings": {
+		"files.associations": {
+			".pylintrc": "ini"
+		}
+	}
+}

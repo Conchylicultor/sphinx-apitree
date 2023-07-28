@@ -44,6 +44,8 @@ To add `api/my_module/index` somewhere in your toctree, like:
   * Do not require `__all__` (smart detect of which symbols are documented)
   * Add expandable toc tree with all symbols
 * Add links to `GitHub`.
+* Markdown (`.md`) / Jupyter (`.ipynb`) support out of the box
+* Auto-cross-references (Just annotate markdown inline-code `my_symbol` and links are auto-added)
 * Contrary to `autodoc` and `apitree`, it also document:
   * Type annotations (`Union[]`, ...)
   * Attributes
