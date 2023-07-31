@@ -38,13 +38,6 @@ def make_project(
 
   project_name = _get_project_name(repo_dir=repo_dir)
 
-  # Clear etils before (to allow documenting `etils` itself).
-  # Otherwise, `etils` imported is the one from `pip install` and
-  # not the one from `git clone`.
-  # This has to be done after `epath.Path()` call, which has a lazy-import
-  if project_name == 'etils':
-    _clear_etils()
-
   # TODO(epot): Fragile if one of the module is already imported.
   # If so, should check that imported modules are
   # `import_utils.belong_to_project`
@@ -146,9 +139,7 @@ def _write_api_doc(
   api_dir.mkdir()
 
   if isinstance(modules, dict):
-    modules = [
-        structs.ModuleInfo(alias=k, module_name=v) for k, v in modules.items()
-    ]
+    modules = [structs.ModuleInfo(alias=k, api=v) for k, v in modules.items()]
   if isinstance(modules, structs.ModuleInfo):
     modules = [modules]
 
@@ -187,11 +178,3 @@ def _get_project_name(repo_dir):
   path = repo_dir / 'pyproject.toml'
   info = tomllib.loads(path.read_text())
   return info['project']['name']
-
-
-def _clear_etils():
-  # For re-triggering etils import (as it is used both for documentation
-  # and in apitree
-  for module_name in list(sys.modules):
-    if module_name.startswith('etils'):
-      del sys.modules[module_name]

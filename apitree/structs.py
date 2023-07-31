@@ -22,7 +22,7 @@ class ModuleInfo:
   """
 
   api: str
-  module_name: str
+  module_name: str = None
   alias: str = None
   github_url: str = None
   path_rel_to_imports: bool = False
