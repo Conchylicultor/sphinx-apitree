@@ -52,7 +52,11 @@ class Node:
 
   def __repr__(self) -> str:
     if self.childs:
-      child_str = epy.Lines.repr([c for c in self.childs if c.match.documented])
+      if hasattr(epy, 'pretty_repr')
+        pretty_fn = epy.pretty_repr
+      else:
+        pretty_fn = epy.Lines.repr
+      child_str = pretty_fn([c for c in self.childs if c.match.documented])
     else:
       child_str = ''
     return f'{self.symbol.name}={type(self.match).__name__}{child_str}'
