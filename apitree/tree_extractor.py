@@ -52,7 +52,7 @@ class Node:
 
   def __repr__(self) -> str:
     if self.childs:
-      if hasattr(epy, 'pretty_repr')
+      if hasattr(epy, 'pretty_repr'):
         pretty_fn = epy.pretty_repr
       else:
         pretty_fn = epy.Lines.repr
