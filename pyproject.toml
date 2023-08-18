@@ -18,20 +18,33 @@ keywords = [
 ]
 
 dependencies = [
+    "etils[edc,enp,epath,epy,etree]",
+    "typing_extensions",
 ]
 
 # This is set automatically by flit using `xxx.__version__`
 dynamic = ["version"]
 
-# [project.urls]
-# homepage = "https://github.com/conchylicultor/sphinx-apitree"
-# repository = "https://github.com/conchylicultor/sphinx-apitree"
+[project.urls]
+homepage = "https://github.com/conchylicultor/sphinx-apitree"
+repository = "https://github.com/conchylicultor/sphinx-apitree"
 
 [project.optional-dependencies]
 # Extensions used by `apitree.make_project`
-docs = [
+dev = [
+    "pytest>=3.4",
+    "pytest-xdist",
+    # Development deps (linting, formating,...)
+    "pylint>=2.6.0",
+    "pyink",
     "sphinx-apitree[ext]",
-    "jax[cpu]",
+    "etils[ecolab]",
+]
+# Extensions used by `apitree.make_project`
+ext = [
+    "sphinx",
+    "myst_nb",
+    "sphinx_book_theme",
 ]
 
 [tool.pyink]
@@ -44,6 +57,9 @@ pyink-use-majority-quotes = true
 [build-system]
 requires = ["flit_core >=3.8,<4"]
 build-backend = "flit_core.buildapi"
+
+[tool.flit.module]
+name = "apitree"
 
 [tool.flit.sdist]
 exclude = [
