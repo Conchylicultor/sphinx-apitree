@@ -95,7 +95,7 @@ def get_github_url() -> str:
       capture_output=True,
       text=True,
   )
-  url = out.stdout.strip()
+  url = out.stdout.strip().removesuffix('.git')
   assert url.startswith('https://github.com')
   return url
 

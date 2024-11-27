@@ -29,7 +29,9 @@ class Node:
       return []
     module = self.symbol.value
     all_childs = []
-    for k, v in module.__dict__.items():
+    # Iterate with `dir` to resolve `epy.lazy_api_imports`
+    for k in dir(module):
+      v = getattr(module, k)
       symbol = symbol_match.Symbol(
           name=k,
           value=v,

@@ -6,6 +6,7 @@ import functools
 import inspect
 import os
 import pathlib
+import sys
 import types
 import typing
 from collections.abc import Callable, Iterator
@@ -456,7 +457,8 @@ class _FunctionValue(_WithDocstring, _DocumentedValue):
     # Unwrap to support class decorator like:
     # * `@functools.cache`
     # * `@jax.jit`
-    obj = inspect.unwrap(self.symbol.value)
+    # TODO(epot): Could move static_unwrap to `epy` ?
+    obj = _static_unwrap(self.symbol.value)
     return isinstance(
         obj,
         (
@@ -481,3 +483,21 @@ def _is_package(module: types.ModuleType) -> bool:
   if module.__name__ in context.ctx.curr.should_be_packages:
     return True
   return module.__name__ == module.__package__
+
+
+def _static_unwrap(func):
+  """Like `inspect.unwrap`, but do not trigger `__getattr__`."""
+  f = func  # remember the original func for error reporting
+  # Memoise by id to tolerate non-hashable objects, but store objects to
+  # ensure they aren't destroyed, which would allow their IDs to be reused.
+  memo = {id(f): f}
+  recursion_limit = sys.getrecursionlimit()
+  while not isinstance(func, type) and inspect.getattr_static(
+      func, '__wrapped__', None
+  ):
+    func = func.__wrapped__
+    id_func = id(func)
+    if (id_func in memo) or (len(memo) >= recursion_limit):
+      raise ValueError('wrapper loop when unwrapping {!r}'.format(f))
+    memo[id_func] = func
+  return func

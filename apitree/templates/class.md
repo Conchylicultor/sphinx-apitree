@@ -6,4 +6,5 @@
 
 ```{{eval-rst}}
 .. autoclass:: {qualname_no_alias}
+  :no-index:
 ```

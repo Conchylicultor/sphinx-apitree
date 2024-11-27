@@ -55,6 +55,7 @@ def make_project(
           'member-order': 'bysource',
           'undoc-members': True,
       },
+      maximum_signature_line_length=60,
   )
 
   # Uncomment to try autoapi
