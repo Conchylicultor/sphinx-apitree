@@ -21,6 +21,7 @@ def make_project(
     *,
     modules: dict[str, str] | structs.ModuleInfo | list[structs.ModuleInfo],
     includes_paths: dict[str, str] = {},
+    redirects: dict[str, str] = {},
     globals: dict[str, Any],
 ) -> None:
   """Setup the `conf.py`.
@@ -78,6 +79,9 @@ def make_project(
           'myst_nb',  # Notebook support
           'sphinx.ext.napoleon',  # Numpy-style docstrings
           'sphinx.ext.linkcode',  # Links to GitHub
+          'sphinx_reredirects',  # Allow page redirections
+          # 'sphinx.ext.intersphinx',  # Cross links with Jax, Python,...
+          # 'sphinx_codeautolink',  # Add links in code blocks
           # Others:
           # 'sphinx_autodoc_typehints',
           # 'sphinx.ext.linkcode',
@@ -125,7 +129,19 @@ def make_project(
           ],
       ),
       # ---- linkcode -------------------------------------------------
+      redirects=redirects,
+      # ---- linkcode -------------------------------------------------
       linkcode_resolve=github_link.linkcode_resolve,
+      # ---- intersphinx -------------------------------------------------
+      # intersphinx_mapping = {
+      #     'python': ('https://docs.python.org/3', None),
+      #     'etils': ('https://etils.readthedocs.io/en/latest/', None),
+      #     # 'gemma': ('https://gemma-llm.readthedocs.io/en/latest/', None),
+      #     'kauldron': ('https://kauldron.readthedocs.io/en/latest/', None),
+      #     'jax': ('https://jax.readthedocs.io/en/latest/', None),
+      #     'flax': ('https://flax.readthedocs.io/en/latest/', None),
+      #     'chex': ('https://chex.readthedocs.io/en/latest/', None),
+      # },
   )
 
 
