@@ -45,6 +45,7 @@ ext = [
     "sphinx",
     "myst_nb",
     "sphinx_book_theme",
+    "sphinx-reredirects",
 ]
 
 [tool.pyink]
